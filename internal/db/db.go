@@ -8,7 +8,16 @@ import (
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
+// ユーザーデータのテーブルです
+type UserData struct {
+	ID       string `gorm:"primaryKey;"`
+	ServerID string `gorm:"index;"`
+	Data     []byte `gorm:"type:jsonb"`
+	// ここはドメインには定義されておらず、UNIQUE制約を付けるために使用しています
+	// serverID_namespace_keyの形式でユニークになります
+	// 例: 1234567890-namespace1-key1
+	ServerIDNamespaceKey string `gorm:"uniqueIndex;"`
+}
 
 // DBに接続します
 func ConnectDB() {
@@ -22,9 +31,7 @@ func ConnectDB() {
 
 	// テーブルが存在していない場合のみテーブルを作成します
 	// 存在している場合はスキーマを同期します
-	if err = db.AutoMigrate(&Bucket{}); err != nil {
+	if err = db.AutoMigrate(&UserData{}); err != nil {
 		panic(errors.NewError("テーブルのスキーマが一致しません", err))
 	}
-
-	DB = db
 }

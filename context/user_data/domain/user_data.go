@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// バケットです
-type Bucket struct {
+// ユーザーのデータです
+type UserData struct {
 	id        string
 	serverID  string
 	namespace string
@@ -18,11 +18,11 @@ type Bucket struct {
 	value     map[string]string
 }
 
-// バケットを作成します
-func NewBucket(
+// ユーザーデータを作成します
+func NewUserData(
 	id, serverID, namespace, key string, value map[string]string,
-) (Bucket, error) {
-	b := Bucket{
+) (UserData, error) {
+	d := UserData{
 		id:        id,
 		serverID:  serverID,
 		namespace: namespace,
@@ -30,37 +30,62 @@ func NewBucket(
 		value:     value,
 	}
 
-	if err := b.Validate(); err != nil {
-		return Bucket{}, errors.NewError("バケットを作成できません", err)
+	if err := d.Validate(); err != nil {
+		return UserData{}, errors.NewError("ユーザーデータを作成できません", err)
 	}
 
-	return b, nil
+	return d, nil
+}
+
+// IDを取得します
+func (d UserData) ID() string {
+	return d.id
+}
+
+// サーバーIDを取得します
+func (d UserData) ServerID() string {
+	return d.serverID
+}
+
+// ネームスペースを取得します
+func (d UserData) Namespace() string {
+	return d.namespace
+}
+
+// キーを取得します
+func (d UserData) Key() string {
+	return d.key
+}
+
+// 値を取得します
+func (d UserData) Value() map[string]string {
+	return d.value
 }
 
 // 検証します
-func (b Bucket) Validate() error {
+func (d UserData) Validate() error {
 	// idがUUIDでない場合はエラー
-	_, err := uuid.Parse(b.id)
+	_, err := uuid.Parse(d.id)
 	if err != nil {
 		return errors.NewError("IDがUUIDではありません", err)
 	}
 
 	// サーバーIDの最大文字数を検証
-	if len([]rune(b.serverID)) > 50 {
+	if len([]rune(d.serverID)) > 50 {
 		return errors.NewError("サーバーIDの文字数を超えています")
 	}
 
 	// ネームスペースの最大文字数を検証
-	if len([]rune(b.namespace)) > 50 {
+	if len([]rune(d.namespace)) > 50 {
 		return errors.NewError("ネームスペースの文字数を超えています")
 	}
 	// ネームスペースで使用できるのは、半角英数字とアンダースコアのみ
-	if !isAlphanumeric(b.namespace) {
+	if !isAlphanumeric(d.namespace) {
 		return errors.NewError("ネームスペースに使用できない文字が含まれています")
 	}
 
 	// キーの最大文字数を検証
-	if len([]rune(b.key)) > 100 {
+	if len([]rune(d.key)) > 100 {
 		return errors.NewError("キーの文字数を超えています")
 	}
 

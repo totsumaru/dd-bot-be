@@ -11,6 +11,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/totsumaru/dd-bot-be/handler"
 	"github.com/totsumaru/dd-bot-be/internal"
+	"github.com/totsumaru/dd-bot-be/internal/db"
 )
 
 func init() {
@@ -32,6 +33,8 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	db.ConnectDB()
 
 	handler.AddHandler(session)
 
