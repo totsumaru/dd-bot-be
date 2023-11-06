@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"encoding/json"
-	defaultErrors "errors"
 	"strings"
 
 	"github.com/totsumaru/dd-bot-be/context/record/domain"
@@ -69,9 +68,9 @@ func (g Gateway) Remove(serverID, namespace, key string) error {
 
 // 条件に一致するものを取得します
 //
-// 取得できない場合はnilを返します。
-func (g Gateway) FindByCondition(serverID, namespace, key string) (*domain.Record, error) {
-	res := &domain.Record{}
+// 取得できない場合はエラーを返します。
+func (g Gateway) FindByCondition(serverID, namespace, key string) (domain.Record, error) {
+	res := domain.Record{}
 
 	joined := joinServerIDNamespaceKey(serverID, namespace, key)
 
@@ -80,12 +79,7 @@ func (g Gateway) FindByCondition(serverID, namespace, key string) (*domain.Recor
 		&dbRecord,
 		"server_id_namespace_key = ?", joined,
 	).Error; err != nil {
-		// レコードが見つからない場合はnilを返す
-		if defaultErrors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		} else {
-			return nil, errors.NewError("IDからレコードを取得できません", err)
-		}
+		return res, errors.NewError("IDからレコードを取得できません", err)
 	}
 
 	return res, nil

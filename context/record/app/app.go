@@ -51,18 +51,20 @@ func RemoveRecord(tx *gorm.DB, serverID, namespace, key string) error {
 }
 
 // 条件に一致するレコードを取得します
-func GetRecords(tx *gorm.DB, serverID, namespace, key string) (domain.Record, error) {
-	record := &domain.Record{}
+//
+// 取得できない場合はエラーを返します。
+func GetRecord(tx *gorm.DB, serverID, namespace, key string) (domain.Record, error) {
+	res := domain.Record{}
 
 	gw, err := gateway.NewGateway(tx)
 	if err != nil {
-		return *record, errors.NewError("ゲートウェイを作成できません", err)
+		return res, errors.NewError("ゲートウェイを作成できません", err)
 	}
 
-	record, err = gw.FindByCondition(serverID, namespace, key)
+	res, err = gw.FindByCondition(serverID, namespace, key)
 	if err != nil {
-		return *record, errors.NewError("レコードを取得できません", err)
+		return res, errors.NewError("レコードを取得できません", err)
 	}
 
-	return *record, nil
+	return res, nil
 }

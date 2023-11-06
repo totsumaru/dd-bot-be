@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/totsumaru/dd-bot-be/api"
 	"github.com/totsumaru/dd-bot-be/handler"
 	"github.com/totsumaru/dd-bot-be/internal"
 	"github.com/totsumaru/dd-bot-be/internal/db"
@@ -49,6 +52,47 @@ func main() {
 		}
 		return
 	}()
+
+	// Ginの設定
+	{
+		engine := gin.Default()
+
+		// CORSの設定
+		// ここからCorsの設定
+		engine.Use(cors.New(cors.Config{
+			// アクセスを許可したいアクセス元
+			AllowOrigins: []string{
+				"*",
+			},
+			// アクセスを許可したいHTTPメソッド
+			AllowMethods: []string{
+				"GET",
+				"POST",
+				"OPTIONS",
+			},
+			// 許可したいHTTPリクエストヘッダ
+			AllowHeaders: []string{
+				"Origin",
+				"Content-Length",
+				"Content-Type",
+				"Authorization",
+				"Accept",
+				"X-Requested-With",
+			},
+			ExposeHeaders: []string{"Content-Length"},
+			// cookieなどの情報を必要とするかどうか
+			AllowCredentials: false,
+			// preflightリクエストの結果をキャッシュする時間
+			//MaxAge: 24 * time.Hour,
+		}))
+
+		// ルートを設定する
+		api.RegisterRouter(engine, db.DB, session)
+
+		if err = engine.Run(":8080"); err != nil {
+			log.Fatal("起動に失敗しました", err)
+		}
+	}
 
 	// Deployedメッセージを送信
 	if _, err = session.ChannelMessageSend(internal.ChannelID().LOG, "deployed!"); err != nil {
