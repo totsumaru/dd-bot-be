@@ -37,6 +37,8 @@ func GetRecord(e *gin.Engine, db *gorm.DB, s *discordgo.Session) {
 			return
 		}
 
+		fmt.Printf("%+v\n", recordRes)
+
 		// Discordに送信します
 		kv := map[string]string{}
 		kv["namespace"] = recordRes.Namespace()

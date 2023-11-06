@@ -11,8 +11,6 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// TODO: FOR UPDATEを使って排他制御を行う
-
 // gatewayです
 type Gateway struct {
 	tx *gorm.DB
@@ -70,8 +68,6 @@ func (g Gateway) Remove(serverID, namespace, key string) error {
 //
 // 取得できない場合はエラーを返します。
 func (g Gateway) FindByCondition(serverID, namespace, key string) (domain.Record, error) {
-	res := domain.Record{}
-
 	joined := joinServerIDNamespaceKey(serverID, namespace, key)
 
 	var dbRecord db.Record
@@ -79,7 +75,12 @@ func (g Gateway) FindByCondition(serverID, namespace, key string) (domain.Record
 		&dbRecord,
 		"server_id_namespace_key = ?", joined,
 	).Error; err != nil {
-		return res, errors.NewError("IDからレコードを取得できません", err)
+		return domain.Record{}, errors.NewError("IDからレコードを取得できません", err)
+	}
+
+	res, err := castToDomainModel(dbRecord)
+	if err != nil {
+		return domain.Record{}, errors.NewError("DBの構造体をドメインモデルに変換できません", err)
 	}
 
 	return res, nil
@@ -126,6 +127,17 @@ func castToDBStruct(record domain.Record) (db.Record, error) {
 	res.ServerID = record.ServerID()
 	res.Data = b
 	res.ServerIDNamespaceKey = joined
+
+	return res, nil
+}
+
+// DBの構造体からドメインモデルに変換します
+func castToDomainModel(dbRecord db.Record) (domain.Record, error) {
+	res := domain.Record{}
+
+	if err := json.Unmarshal(dbRecord.Data, &res); err != nil {
+		return res, errors.NewError("Unmarshalに失敗しました", err)
+	}
 
 	return res, nil
 }

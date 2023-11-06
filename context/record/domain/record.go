@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/json"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -14,17 +15,21 @@ type Record struct {
 	namespace string
 	key       string
 	value     map[string]string
+	updated   time.Time
 }
 
 // レコードを作成します
 func NewRecord(
-	serverID, namespace, key string, value map[string]string,
+	serverID, namespace, key string,
+	value map[string]string,
+	updated time.Time,
 ) (Record, error) {
 	d := Record{
 		serverID:  serverID,
 		namespace: namespace,
 		key:       key,
 		value:     value,
+		updated:   updated,
 	}
 
 	if err := d.Validate(); err != nil {
@@ -52,6 +57,11 @@ func (d Record) Key() string {
 // 値を取得します
 func (d Record) Value() map[string]string {
 	return d.value
+}
+
+// 更新日時を取得します
+func (d Record) Updated() time.Time {
+	return d.updated
 }
 
 // 検証します

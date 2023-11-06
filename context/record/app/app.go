@@ -4,6 +4,7 @@ import (
 	"github.com/totsumaru/dd-bot-be/context/record/domain"
 	"github.com/totsumaru/dd-bot-be/context/record/gateway"
 	"github.com/totsumaru/dd-bot-be/internal/errors"
+	"github.com/totsumaru/dd-bot-be/internal/now"
 	"gorm.io/gorm"
 )
 
@@ -18,7 +19,11 @@ type UpsertRequest struct {
 // レコードをUpsertします
 func UpsertRecord(tx *gorm.DB, req UpsertRequest) error {
 	record, err := domain.NewRecord(
-		req.ServerID, req.Namespace, req.Key, req.Value,
+		req.ServerID,
+		req.Namespace,
+		req.Key,
+		req.Value,
+		now.NowJST(),
 	)
 	if err != nil {
 		return errors.NewError("レコードを作成できません", err)

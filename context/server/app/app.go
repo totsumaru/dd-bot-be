@@ -4,12 +4,13 @@ import (
 	"github.com/totsumaru/dd-bot-be/context/server/domain"
 	"github.com/totsumaru/dd-bot-be/context/server/gateway"
 	"github.com/totsumaru/dd-bot-be/internal/errors"
+	"github.com/totsumaru/dd-bot-be/internal/now"
 	"gorm.io/gorm"
 )
 
 // サーバーを作成します
 func CreateServer(tx *gorm.DB, id, channelID string) error {
-	s, err := domain.NewServer(id, channelID)
+	s, err := domain.NewServer(id, channelID, now.NowJST(), now.NowJST())
 	if err != nil {
 		return errors.NewError("サーバーを作成できません", err)
 	}

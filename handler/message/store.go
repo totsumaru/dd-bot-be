@@ -10,6 +10,11 @@ import (
 
 // 送信された情報を保存します
 func Store(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// Bot自身からのメッセージは無視します
+	if m.Author.ID == s.State.User.ID {
+		return
+	}
+
 	// チャンネルがDB専用のチャンネルかどうかを確認します
 	{
 		// サーバーを取得します

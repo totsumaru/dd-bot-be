@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/totsumaru/dd-bot-be/internal/errors"
 )
@@ -10,13 +11,17 @@ import (
 type Server struct {
 	id          string
 	dbChannelID string // DB関連の操作を実行するチャンネルです
+	created     time.Time
+	updated     time.Time
 }
 
 // サーバーを作成します
-func NewServer(id, dbChannelID string) (Server, error) {
+func NewServer(id, dbChannelID string, created, updated time.Time) (Server, error) {
 	d := Server{
 		id:          id,
 		dbChannelID: dbChannelID,
+		created:     created,
+		updated:     updated,
 	}
 
 	if err := d.Validate(); err != nil {
@@ -36,6 +41,16 @@ func (d Server) DBChannelID() string {
 	return d.dbChannelID
 }
 
+// 作成日時を取得します
+func (d Server) Created() time.Time {
+	return d.created
+}
+
+// 更新日時を取得します
+func (d Server) Updated() time.Time {
+	return d.updated
+}
+
 // バリデーションを行います
 func (d Server) Validate() error {
 	if d.id == "" {
@@ -52,11 +67,15 @@ func (d Server) Validate() error {
 // JSONに変換します
 func (d Server) MarshalJSON() ([]byte, error) {
 	data := struct {
-		ID          string `json:"id"`
-		DBChannelID string `json:"db_channel_id"`
+		ID          string    `json:"id"`
+		DBChannelID string    `json:"db_channel_id"`
+		Created     time.Time `json:"created"`
+		Updated     time.Time `json:"updated"`
 	}{
 		ID:          d.id,
 		DBChannelID: d.dbChannelID,
+		Created:     d.created,
+		Updated:     d.updated,
 	}
 
 	return json.Marshal(data)
@@ -65,8 +84,10 @@ func (d Server) MarshalJSON() ([]byte, error) {
 // JSONからDiscordのIDを復元します
 func (d *Server) UnmarshalJSON(b []byte) error {
 	data := struct {
-		ID          string `json:"id"`
-		DBChannelID string `json:"db_channel_id"`
+		ID          string    `json:"id"`
+		DBChannelID string    `json:"db_channel_id"`
+		Created     time.Time `json:"created"`
+		Updated     time.Time `json:"updated"`
 	}{}
 
 	if err := json.Unmarshal(b, &data); err != nil {
@@ -75,6 +96,8 @@ func (d *Server) UnmarshalJSON(b []byte) error {
 
 	d.id = data.ID
 	d.dbChannelID = data.DBChannelID
+	d.created = data.Created
+	d.updated = data.Updated
 
 	return nil
 }
