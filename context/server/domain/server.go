@@ -82,11 +82,13 @@ func (d Server) MarshalJSON() ([]byte, error) {
 	data := struct {
 		ID          ServerID  `json:"id"`
 		DBChannelID ChannelID `json:"db_channel_id"`
+		APIKey      APIKey    `json:"api_key"`
 		CreatedAt   time.Time `json:"created_at"`
 		UpdatedAt   time.Time `json:"updated_at"`
 	}{
 		ID:          d.id,
 		DBChannelID: d.dbChannelID,
+		APIKey:      d.apiKey,
 		CreatedAt:   d.createdAt,
 		UpdatedAt:   d.updatedAt,
 	}
@@ -99,6 +101,7 @@ func (d *Server) UnmarshalJSON(b []byte) error {
 	data := struct {
 		ID          ServerID  `json:"id"`
 		DBChannelID ChannelID `json:"db_channel_id"`
+		APIKey      APIKey    `json:"api_key"`
 		CreatedAt   time.Time `json:"created_at"`
 		UpdatedAt   time.Time `json:"updated_at"`
 	}{}
@@ -109,6 +112,7 @@ func (d *Server) UnmarshalJSON(b []byte) error {
 
 	d.id = data.ID
 	d.dbChannelID = data.DBChannelID
+	d.apiKey = data.APIKey
 	d.createdAt = data.CreatedAt
 	d.updatedAt = data.UpdatedAt
 
