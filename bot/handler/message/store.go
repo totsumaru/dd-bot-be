@@ -11,8 +11,14 @@ import (
 // 送信された情報を保存します
 func Store(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Bot自身からのメッセージは無視します
+	// ※タイトルが`テスト登録用`となっている場合は登録します。
 	if m.Author.ID == s.State.User.ID {
-		return
+		if len(m.Embeds) == 0 {
+			return
+		}
+		if m.Embeds[0].Title != "テスト登録用" {
+			return
+		}
 	}
 
 	// チャンネルがDB専用のチャンネルかどうかを確認します
@@ -23,7 +29,7 @@ func Store(s *discordgo.Session, m *discordgo.MessageCreate) {
 			errors.SendErrMsg(s, errors.NewError("サーバーを取得できません", err))
 		}
 
-		if m.ChannelID != server.DBChannelID() {
+		if !server.DBChannelID().Equal(m.ChannelID) {
 			return
 		}
 	}

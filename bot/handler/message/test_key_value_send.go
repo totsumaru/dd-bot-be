@@ -21,7 +21,7 @@ func SendKeyValue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	embed := &discordgo.MessageEmbed{
-		Title:  "テスト送信用",
+		Title:  "テスト登録用",
 		Fields: []*discordgo.MessageEmbedField{},
 	}
 

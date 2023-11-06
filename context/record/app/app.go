@@ -18,13 +18,22 @@ type UpsertRequest struct {
 
 // レコードをUpsertします
 func UpsertRecord(tx *gorm.DB, req UpsertRequest) error {
-	record, err := domain.NewRecord(
-		req.ServerID,
-		req.Namespace,
-		req.Key,
-		req.Value,
-		now.NowJST(),
-	)
+	serverID, err := domain.NewServerID(req.ServerID)
+	if err != nil {
+		return errors.NewError("サーバーIDを作成できません", err)
+	}
+
+	namespace, err := domain.NewNamespace(req.Namespace)
+	if err != nil {
+		return errors.NewError("ネームスペースを作成できません", err)
+	}
+
+	key, err := domain.NewKey(req.Key)
+	if err != nil {
+		return errors.NewError("キーを作成できません", err)
+	}
+
+	record, err := domain.NewRecord(serverID, namespace, key, req.Value, now.NowJST())
 	if err != nil {
 		return errors.NewError("レコードを作成できません", err)
 	}

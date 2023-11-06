@@ -12,7 +12,7 @@ import (
 func Setup(s *discordgo.Session, g *discordgo.GuildCreate) {
 	// 既に作成されている場合は終了します
 	server, err := app.GetServer(db.DB, g.Guild.ID)
-	if err == nil && server.ID() != "" {
+	if err == nil && server.ID().String() != "" {
 		return
 	}
 
@@ -33,6 +33,7 @@ func Setup(s *discordgo.Session, g *discordgo.GuildCreate) {
 		errors.SendErrMsg(s, errors.NewError("専用チャンネルを作成できません", err))
 	}
 
+	// Tx
 	err = db.DB.Transaction(func(tx *gorm.DB) error {
 		if err = app.CreateServer(tx, g.Guild.ID, channel.ID); err != nil {
 			return errors.NewError("サーバーを作成できません", err)

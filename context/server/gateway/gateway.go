@@ -59,13 +59,36 @@ func (g Gateway) Update(server domain.Server) error {
 // IDでサーバーを取得します
 //
 // 取得できない場合はエラーを返します。
-func (g Gateway) FindByID(id string) (domain.Server, error) {
+func (g Gateway) FindByID(id domain.ServerID) (domain.Server, error) {
 	var dbServer db.Server
-	if err := g.tx.First(&dbServer, "id = ?", id).Error; err != nil {
+	if err := g.tx.First(&dbServer, "id = ?", id.String()).Error; err != nil {
 		if defaultErrors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.Server{}, errors.NewError("サーバーが見つかりません", err)
 		}
+		return domain.Server{}, errors.NewError("サーバーを取得できません", err)
+	}
 
+	res, err := castToDomainModel(dbServer)
+	if err != nil {
+		return domain.Server{}, errors.NewError("DBの構造体をドメインモデルに変換できません", err)
+	}
+
+	return res, nil
+}
+
+// FOR UPDATEをしてIDでサーバーを取得します
+//
+// 取得できない場合はエラーを返します。
+func (g Gateway) FindByIDForUpdate(id domain.ServerID) (domain.Server, error) {
+	var dbServer db.Server
+	// Setを使ってFOR UPDATEをクエリオプションとして追加します。
+	if err := g.tx.Set(
+		"gorm:query_option",
+		"FOR UPDATE",
+	).First(&dbServer, "id = ?", id.String()).Error; err != nil {
+		if defaultErrors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.Server{}, errors.NewError("サーバーが見つかりません", err)
+		}
 		return domain.Server{}, errors.NewError("サーバーを取得できません", err)
 	}
 
@@ -86,7 +109,7 @@ func castToDBStruct(server domain.Server) (db.Server, error) {
 		return res, errors.NewError("Marshalに失敗しました", err)
 	}
 
-	res.ID = server.ID()
+	res.ID = server.ID().String()
 	res.Data = b
 
 	return res, nil

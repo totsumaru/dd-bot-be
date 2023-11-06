@@ -119,12 +119,12 @@ func castToDBStruct(record domain.Record) (db.Record, error) {
 	}
 
 	joined := joinServerIDNamespaceKey(
-		record.ServerID(),
-		record.Namespace(),
-		record.Key(),
+		record.ServerID().String(),
+		record.Namespace().String(),
+		record.Key().String(),
 	)
 
-	res.ServerID = record.ServerID()
+	res.ServerID = record.ServerID().String()
 	res.Data = b
 	res.ServerIDNamespaceKey = joined
 

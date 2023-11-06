@@ -2,9 +2,9 @@ package handler
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/totsumaru/dd-bot-be/handler/guild_create"
-	"github.com/totsumaru/dd-bot-be/handler/interaction"
-	"github.com/totsumaru/dd-bot-be/handler/message"
+	"github.com/totsumaru/dd-bot-be/bot/handler/guild_create"
+	"github.com/totsumaru/dd-bot-be/bot/handler/interaction"
+	"github.com/totsumaru/dd-bot-be/bot/handler/message"
 )
 
 // ハンドラを追加します

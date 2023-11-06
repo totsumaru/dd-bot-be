@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/totsumaru/dd-bot-be/api"
-	"github.com/totsumaru/dd-bot-be/handler"
+	"github.com/totsumaru/dd-bot-be/bot/handler"
 	"github.com/totsumaru/dd-bot-be/internal"
 	"github.com/totsumaru/dd-bot-be/internal/db"
 )

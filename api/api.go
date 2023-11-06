@@ -10,7 +10,7 @@ import (
 // ルートを設定します
 func RegisterRouter(e *gin.Engine, db *gorm.DB, s *discordgo.Session) {
 	Route(e)
-	record.GetRecord(e, db, s)
+	record.GetRecord(e, db)
 }
 
 // ルートです

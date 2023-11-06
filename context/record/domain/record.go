@@ -3,33 +3,33 @@ package domain
 import (
 	"encoding/json"
 	"time"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/totsumaru/dd-bot-be/internal/errors"
 )
 
 // レコードです
 type Record struct {
-	serverID  string
-	namespace string
-	key       string
+	serverID  ServerID
+	namespace Namespace
+	key       Key
 	value     map[string]string
-	updated   time.Time
+	updatedAt time.Time
 }
 
 // レコードを作成します
 func NewRecord(
-	serverID, namespace, key string,
+	serverID ServerID,
+	namespace Namespace,
+	key Key,
 	value map[string]string,
-	updated time.Time,
+	updatedAt time.Time,
 ) (Record, error) {
 	d := Record{
 		serverID:  serverID,
 		namespace: namespace,
 		key:       key,
 		value:     value,
-		updated:   updated,
+		updatedAt: updatedAt,
 	}
 
 	if err := d.Validate(); err != nil {
@@ -40,17 +40,17 @@ func NewRecord(
 }
 
 // サーバーIDを取得します
-func (d Record) ServerID() string {
+func (d Record) ServerID() ServerID {
 	return d.serverID
 }
 
 // ネームスペースを取得します
-func (d Record) Namespace() string {
+func (d Record) Namespace() Namespace {
 	return d.namespace
 }
 
 // キーを取得します
-func (d Record) Key() string {
+func (d Record) Key() Key {
 	return d.key
 }
 
@@ -60,44 +60,18 @@ func (d Record) Value() map[string]string {
 }
 
 // 更新日時を取得します
-func (d Record) Updated() time.Time {
-	return d.updated
+func (d Record) UpdatedAt() time.Time {
+	return d.updatedAt
 }
 
 // 検証します
 func (d Record) Validate() error {
-	// サーバーIDを検証
-	{
-		if d.serverID == "" {
-			return errors.NewError("サーバーIDがありません")
-		}
-		if len([]rune(d.serverID)) > 50 {
-			return errors.NewError("サーバーIDの文字数を超えています")
-		}
+	if len(d.value) == 0 {
+		return errors.NewError("valueの値が空です")
 	}
 
-	// ネームスペースを検証
-	{
-		if d.namespace == "" {
-			return errors.NewError("ネームスペースがありません")
-		}
-		if len([]rune(d.namespace)) > 50 {
-			return errors.NewError("ネームスペースの文字数を超えています")
-		}
-		// ネームスペースで使用できるのは、半角英数字とアンダースコアのみ
-		if !isAlphanumeric(d.namespace) {
-			return errors.NewError("ネームスペースに使用できない文字が含まれています")
-		}
-	}
-
-	// キーを検証
-	{
-		if d.key == "" {
-			return errors.NewError("キーがありません")
-		}
-		if len([]rune(d.key)) > 100 {
-			return errors.NewError("キーの文字数を超えています")
-		}
+	if d.updatedAt.IsZero() {
+		return errors.NewError("updatedの値が空です")
 	}
 
 	return nil
@@ -106,15 +80,17 @@ func (d Record) Validate() error {
 // JSONに変換します
 func (d Record) MarshalJSON() ([]byte, error) {
 	data := struct {
-		ServerID  string            `json:"server_id"`
-		Namespace string            `json:"namespace"`
-		Key       string            `json:"key"`
+		ServerID  ServerID          `json:"server_id"`
+		Namespace Namespace         `json:"namespace"`
+		Key       Key               `json:"key"`
 		Value     map[string]string `json:"value"`
+		UpdatedAt time.Time         `json:"updated_at"`
 	}{
 		ServerID:  d.serverID,
 		Namespace: d.namespace,
 		Key:       d.key,
 		Value:     d.value,
+		UpdatedAt: d.updatedAt,
 	}
 
 	return json.Marshal(data)
@@ -123,10 +99,11 @@ func (d Record) MarshalJSON() ([]byte, error) {
 // JSONからレコードを復元します
 func (d *Record) UnmarshalJSON(b []byte) error {
 	data := struct {
-		ServerID  string            `json:"server_id"`
-		Namespace string            `json:"namespace"`
-		Key       string            `json:"key"`
+		ServerID  ServerID          `json:"server_id"`
+		Namespace Namespace         `json:"namespace"`
+		Key       Key               `json:"key"`
 		Value     map[string]string `json:"value"`
+		UpdatedAt time.Time         `json:"updated_at"`
 	}{}
 
 	if err := json.Unmarshal(b, &data); err != nil {
@@ -137,18 +114,7 @@ func (d *Record) UnmarshalJSON(b []byte) error {
 	d.namespace = data.Namespace
 	d.key = data.Key
 	d.value = data.Value
+	d.updatedAt = data.UpdatedAt
 
 	return nil
-}
-
-// 英数字かアンダースコアのみで構成されているか確認します
-func isAlphanumeric(s string) bool {
-	for len(s) > 0 {
-		r, size := utf8.DecodeRuneInString(s)
-		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' {
-			return false
-		}
-		s = s[size:]
-	}
-	return true
 }

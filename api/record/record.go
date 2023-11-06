@@ -1,22 +1,33 @@
 package record
 
 import (
-	"fmt"
+	"encoding/json"
+	"time"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/gin-gonic/gin"
 	recordApp "github.com/totsumaru/dd-bot-be/context/record/app"
 	serverApp "github.com/totsumaru/dd-bot-be/context/server/app"
-	"github.com/totsumaru/dd-bot-be/internal/errors"
 	"gorm.io/gorm"
 )
 
+// レスポンスです
+//
+// jsonへの変換はMarshalJSONを実装しています。
+type Res struct {
+	Namespace string
+	Key       string
+	UpdatedAt time.Time         // 例: 2023-09-01T12:00:00+09:00
+	Value     map[string]string // ここは`value`は無視され、展開して返されます
+}
+
 // レコードを取得します
-func GetRecord(e *gin.Engine, db *gorm.DB, s *discordgo.Session) {
+func GetRecord(e *gin.Engine, db *gorm.DB) {
 	e.GET("/record", func(c *gin.Context) {
 		guild := c.Query("guild")
 		namespace := c.Query("namespace")
 		key := c.Query("key")
+
+		apiKey := c.GetHeader("X-API-KEY")
 
 		if guild == "" || namespace == "" || key == "" {
 			c.JSON(400, "guild, namespace, keyを指定してください")
@@ -30,6 +41,11 @@ func GetRecord(e *gin.Engine, db *gorm.DB, s *discordgo.Session) {
 			return
 		}
 
+		if !serverRes.APIKey().IsMatch(apiKey) {
+			c.JSON(401, "APIキーが不正です")
+			return
+		}
+
 		// レコードを取得します
 		recordRes, err := recordApp.GetRecord(db, guild, namespace, key)
 		if err != nil {
@@ -37,42 +53,34 @@ func GetRecord(e *gin.Engine, db *gorm.DB, s *discordgo.Session) {
 			return
 		}
 
-		fmt.Printf("%+v\n", recordRes)
-
-		// Discordに送信します
-		kv := map[string]string{}
-		kv["namespace"] = recordRes.Namespace()
-		kv["key"] = recordRes.Key()
+		value := map[string]string{}
 		for k, v := range recordRes.Value() {
-			kv[k] = v
+			value[k] = v
 		}
 
-		embed := &discordgo.MessageEmbed{
-			Title:  "Response",
-			Fields: []*discordgo.MessageEmbedField{},
+		res := Res{
+			Namespace: recordRes.Namespace().String(),
+			Key:       recordRes.Key().String(),
+			Value:     value,
+			UpdatedAt: recordRes.UpdatedAt(),
 		}
 
-		// Add fields to the embed
-		for k, v := range kv {
-			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-				Name:  k,
-				Value: v,
-			})
-		}
-
-		// Send the embed
-		msg, err := s.ChannelMessageSendEmbed(serverRes.DBChannelID(), embed)
-		if err != nil {
-			errors.SendErrMsg(s, errors.NewError("key-valueを送信できません", err))
-		}
-
-		messageURL := fmt.Sprintf(
-			"https://discord.com/channels/%s/%s/%s",
-			guild,
-			serverRes.DBChannelID(),
-			msg.ID,
-		)
-
-		c.JSON(200, messageURL)
+		c.JSON(200, res)
 	})
+}
+
+// MarshalJSON は Res のカスタム JSON マーシャリングを実装します。
+func (r Res) MarshalJSON() ([]byte, error) {
+	// Value マップを含む一時的なマップを作成
+	tmp := map[string]interface{}{
+		"namespace":  r.Namespace,
+		"key":        r.Key,
+		"updated_at": r.UpdatedAt,
+	}
+	// Value マップのキーと値を一時的なマップに追加
+	for k, v := range r.Value {
+		tmp[k] = v
+	}
+
+	return json.Marshal(tmp)
 }
