@@ -56,23 +56,38 @@ func (d Record) Value() map[string]string {
 
 // 検証します
 func (d Record) Validate() error {
-	// サーバーIDの最大文字数を検証
-	if len([]rune(d.serverID)) > 50 {
-		return errors.NewError("サーバーIDの文字数を超えています")
+	// サーバーIDを検証
+	{
+		if d.serverID == "" {
+			return errors.NewError("サーバーIDがありません")
+		}
+		if len([]rune(d.serverID)) > 50 {
+			return errors.NewError("サーバーIDの文字数を超えています")
+		}
 	}
 
-	// ネームスペースの最大文字数を検証
-	if len([]rune(d.namespace)) > 50 {
-		return errors.NewError("ネームスペースの文字数を超えています")
-	}
-	// ネームスペースで使用できるのは、半角英数字とアンダースコアのみ
-	if !isAlphanumeric(d.namespace) {
-		return errors.NewError("ネームスペースに使用できない文字が含まれています")
+	// ネームスペースを検証
+	{
+		if d.namespace == "" {
+			return errors.NewError("ネームスペースがありません")
+		}
+		if len([]rune(d.namespace)) > 50 {
+			return errors.NewError("ネームスペースの文字数を超えています")
+		}
+		// ネームスペースで使用できるのは、半角英数字とアンダースコアのみ
+		if !isAlphanumeric(d.namespace) {
+			return errors.NewError("ネームスペースに使用できない文字が含まれています")
+		}
 	}
 
-	// キーの最大文字数を検証
-	if len([]rune(d.key)) > 100 {
-		return errors.NewError("キーの文字数を超えています")
+	// キーを検証
+	{
+		if d.key == "" {
+			return errors.NewError("キーがありません")
+		}
+		if len([]rune(d.key)) > 100 {
+			return errors.NewError("キーの文字数を超えています")
+		}
 	}
 
 	return nil
