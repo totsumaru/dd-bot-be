@@ -1,29 +1,26 @@
 package domain
 
 import (
+	"encoding/json"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/totsumaru/dd-bot-be/internal/errors"
-
-	"github.com/google/uuid"
 )
 
-// ユーザーのデータです
-type UserData struct {
-	id        string
+// レコードです
+type Record struct {
 	serverID  string
 	namespace string
 	key       string
 	value     map[string]string
 }
 
-// ユーザーデータを作成します
-func NewUserData(
-	id, serverID, namespace, key string, value map[string]string,
-) (UserData, error) {
-	d := UserData{
-		id:        id,
+// レコードを作成します
+func NewRecord(
+	serverID, namespace, key string, value map[string]string,
+) (Record, error) {
+	d := Record{
 		serverID:  serverID,
 		namespace: namespace,
 		key:       key,
@@ -31,45 +28,34 @@ func NewUserData(
 	}
 
 	if err := d.Validate(); err != nil {
-		return UserData{}, errors.NewError("ユーザーデータを作成できません", err)
+		return Record{}, errors.NewError("レコードを作成できません", err)
 	}
 
 	return d, nil
 }
 
-// IDを取得します
-func (d UserData) ID() string {
-	return d.id
-}
-
 // サーバーIDを取得します
-func (d UserData) ServerID() string {
+func (d Record) ServerID() string {
 	return d.serverID
 }
 
 // ネームスペースを取得します
-func (d UserData) Namespace() string {
+func (d Record) Namespace() string {
 	return d.namespace
 }
 
 // キーを取得します
-func (d UserData) Key() string {
+func (d Record) Key() string {
 	return d.key
 }
 
 // 値を取得します
-func (d UserData) Value() map[string]string {
+func (d Record) Value() map[string]string {
 	return d.value
 }
 
 // 検証します
-func (d UserData) Validate() error {
-	// idがUUIDでない場合はエラー
-	_, err := uuid.Parse(d.id)
-	if err != nil {
-		return errors.NewError("IDがUUIDではありません", err)
-	}
-
+func (d Record) Validate() error {
 	// サーバーIDの最大文字数を検証
 	if len([]rune(d.serverID)) > 50 {
 		return errors.NewError("サーバーIDの文字数を超えています")
@@ -88,6 +74,44 @@ func (d UserData) Validate() error {
 	if len([]rune(d.key)) > 100 {
 		return errors.NewError("キーの文字数を超えています")
 	}
+
+	return nil
+}
+
+// JSONに変換します
+func (d Record) MarshalJSON() ([]byte, error) {
+	data := struct {
+		ServerID  string            `json:"server_id"`
+		Namespace string            `json:"namespace"`
+		Key       string            `json:"key"`
+		Value     map[string]string `json:"value"`
+	}{
+		ServerID:  d.serverID,
+		Namespace: d.namespace,
+		Key:       d.key,
+		Value:     d.value,
+	}
+
+	return json.Marshal(data)
+}
+
+// JSONからレコードを復元します
+func (d *Record) UnmarshalJSON(b []byte) error {
+	data := struct {
+		ServerID  string            `json:"server_id"`
+		Namespace string            `json:"namespace"`
+		Key       string            `json:"key"`
+		Value     map[string]string `json:"value"`
+	}{}
+
+	if err := json.Unmarshal(b, &data); err != nil {
+		return errors.NewError("JSONからレコードの復元に失敗しました", err)
+	}
+
+	d.serverID = data.ServerID
+	d.namespace = data.Namespace
+	d.key = data.Key
+	d.value = data.Value
 
 	return nil
 }

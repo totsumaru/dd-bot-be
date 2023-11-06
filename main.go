@@ -34,8 +34,10 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	// DBのセットアップ
 	db.ConnectDB()
 
+	// ハンドラを追加
 	handler.AddHandler(session)
 
 	if err = session.Open(); err != nil {

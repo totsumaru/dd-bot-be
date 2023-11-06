@@ -5,7 +5,7 @@ import (
 	defaultErrors "errors"
 	"strings"
 
-	"github.com/totsumaru/dd-bot-be/context/user_data/domain"
+	"github.com/totsumaru/dd-bot-be/context/record/domain"
 	"github.com/totsumaru/dd-bot-be/internal/db"
 	"github.com/totsumaru/dd-bot-be/internal/errors"
 	"gorm.io/gorm"
@@ -36,8 +36,8 @@ func NewGateway(tx *gorm.DB) (Gateway, error) {
 //
 // idはCreateの時のみ使用します。
 // updateの時は、idは無視されます。
-func (g Gateway) Upsert(userData domain.UserData) error {
-	dbUserData, err := castToDBStruct(userData)
+func (g Gateway) Upsert(record domain.Record) error {
+	dbRecord, err := castToDBStruct(record)
 	if err != nil {
 		return errors.NewError("ドメインモデルをDBの構造体に変換できません", err)
 	}
@@ -46,7 +46,7 @@ func (g Gateway) Upsert(userData domain.UserData) error {
 	if err = g.tx.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "server_id_namespace_key"}},
 		UpdateAll: true,
-	}).Create(&dbUserData).Error; err != nil {
+	}).Create(&dbRecord).Error; err != nil {
 		return errors.NewError("レコードを作成または更新できません", err)
 	}
 
@@ -55,10 +55,10 @@ func (g Gateway) Upsert(userData domain.UserData) error {
 
 // 削除します
 func (g Gateway) Remove(serverID, namespace, key string) error {
-	joined := strings.Join([]string{serverID, namespace, key}, "-")
+	joined := joinServerIDNamespaceKey(serverID, namespace, key)
 
 	if err := g.tx.Delete(
-		&db.UserData{},
+		&db.Record{},
 		"server_id_namespace_key = ?", joined,
 	).Error; err != nil {
 		return errors.NewError("レコードを削除できません", err)
@@ -70,14 +70,14 @@ func (g Gateway) Remove(serverID, namespace, key string) error {
 // 条件に一致するものを取得します
 //
 // 取得できない場合はnilを返します。
-func (g Gateway) FindByCondition(serverID, namespace, key string) (*domain.UserData, error) {
-	res := &domain.UserData{}
+func (g Gateway) FindByCondition(serverID, namespace, key string) (*domain.Record, error) {
+	res := &domain.Record{}
 
-	joined := strings.Join([]string{serverID, namespace, key}, "-")
+	joined := joinServerIDNamespaceKey(serverID, namespace, key)
 
-	var dbUserData db.UserData
+	var dbRecord db.Record
 	if err := g.tx.First(
-		&dbUserData,
+		&dbRecord,
 		"server_id_namespace_key = ?", joined,
 	).Error; err != nil {
 		// レコードが見つからない場合はnilを返す
@@ -92,44 +92,51 @@ func (g Gateway) FindByCondition(serverID, namespace, key string) (*domain.UserD
 }
 
 // サーバーIDに一致する全ての情報を取得します
-func (g Gateway) FindAllByServerID(serverID string) ([]domain.UserData, error) {
-	res := make([]domain.UserData, 0)
+func (g Gateway) FindAllByServerID(serverID string) ([]domain.Record, error) {
+	res := make([]domain.Record, 0)
 
-	var dbUserData []db.UserData
+	var dbRecord []db.Record
 	if err := g.tx.Where(
 		"server_id = ?", serverID,
-	).Find(&dbUserData).Error; err != nil {
+	).Find(&dbRecord).Error; err != nil {
 		return res, errors.NewError("サーバーIDからレコードを取得できません", err)
 	}
 
-	for _, v := range dbUserData {
-		var userData domain.UserData
-		if err := json.Unmarshal(v.Data, &userData); err != nil {
+	for _, v := range dbRecord {
+		var record domain.Record
+		if err := json.Unmarshal(v.Data, &record); err != nil {
 			return res, errors.NewError("レコードをドメインモデルに変換できません", err)
 		}
 
-		res = append(res, userData)
+		res = append(res, record)
 	}
 
 	return res, nil
 }
 
 // ドメインモデルからDBの構造体に変換します
-func castToDBStruct(userData domain.UserData) (db.UserData, error) {
-	res := db.UserData{}
+func castToDBStruct(record domain.Record) (db.Record, error) {
+	res := db.Record{}
 
-	b, err := json.Marshal(&userData)
+	b, err := json.Marshal(&record)
 	if err != nil {
 		return res, errors.NewError("Marshalに失敗しました", err)
 	}
 
-	res.ID = userData.ID()
-	res.ServerID = userData.ServerID()
-	res.Data = b
-	res.ServerIDNamespaceKey = strings.Join(
-		[]string{userData.ServerID(), userData.Namespace(), userData.Key()},
-		"-",
+	joined := joinServerIDNamespaceKey(
+		record.ServerID(),
+		record.Namespace(),
+		record.Key(),
 	)
 
+	res.ServerID = record.ServerID()
+	res.Data = b
+	res.ServerIDNamespaceKey = joined
+
 	return res, nil
+}
+
+// ServerIDNamespaceKeyを結合します
+func joinServerIDNamespaceKey(serverID, namespace, key string) string {
+	return strings.Join([]string{serverID, namespace, key}, "-")
 }
