@@ -13,6 +13,10 @@ func InteractionCreateHandler(s *discordgo.Session, i *discordgo.InteractionCrea
 		}
 	// コマンド
 	case discordgo.InteractionApplicationCommand:
+		switch i.ApplicationCommandData().Name {
+		case "create-api-key":
+			CreateAPIKeyHandler(s, i)
+		}
 	// Modal
 	case discordgo.InteractionModalSubmit:
 	}

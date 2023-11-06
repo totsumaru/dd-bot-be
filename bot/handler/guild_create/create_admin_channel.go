@@ -9,7 +9,7 @@ import (
 )
 
 // DBの専用チャンネルを作成し、DBに情報を保存します
-func Setup(s *discordgo.Session, g *discordgo.GuildCreate) {
+func CreateAdminChannel(s *discordgo.Session, g *discordgo.GuildCreate) {
 	// 既に作成されている場合は終了します
 	server, err := app.GetServer(db.DB, g.Guild.ID)
 	if err == nil && server.ID().String() != "" {
