@@ -15,9 +15,9 @@ func SendKeyValue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	fields := map[string]string{
-		"namespace": "ns1",
-		"key":       "12345",
-		"key1":      "value1",
+		"namespace": "event_point",
+		"key":       "960104306151948328",
+		"point":     "53",
 	}
 
 	embed := &discordgo.MessageEmbed{
