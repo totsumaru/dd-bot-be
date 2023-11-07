@@ -3,27 +3,29 @@ package message
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/totsumaru/dd-bot-be/bot"
+
 	recordApp "github.com/totsumaru/dd-bot-be/context/record/app"
-	serverApp "github.com/totsumaru/dd-bot-be/context/server/app"
+
 	"github.com/totsumaru/dd-bot-be/internal/db"
 	"github.com/totsumaru/dd-bot-be/internal/errors"
+	"gorm.io/gorm"
 )
 
 // 送信された情報を保存します
 func Store(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Bot自身からのメッセージは無視します
-	// ※タイトルが`テスト登録用`となっている場合は登録します。
+	// ※タイトルが`テスト`となっている場合は登録します。
 	if m.Author.ID == s.State.User.ID {
 		if len(m.Embeds) == 0 {
 			return
 		}
-		if m.Embeds[0].Title != "テスト登録用" {
+		if m.Embeds[0].Title != "テスト" {
 			return
 		}
 	}
 
 	// チャンネルがDB専用のチャンネルかどうかを確認します
-	ok, err := IsDBChannel(m.GuildID, m.ChannelID)
+	ok, err := bot.IsDBChannel(m.GuildID, m.ChannelID)
 	if err != nil {
 		errors.SendErrMsg(s, errors.NewError("DBチャンネルを確認できません", err))
 		return
@@ -45,6 +47,8 @@ func Store(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
+	isDelete := false
+
 	// バリデーションを行います
 	{
 		if kv["namespace"] == "" {
@@ -61,6 +65,44 @@ func Store(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			return
 		}
+
+		switch kv["method"] {
+		case "POST":
+		case "DELETE":
+			isDelete = true
+		default:
+			_, err = s.ChannelMessageSendReply(m.ChannelID, "ERROR: methodが不正です", m.Reference())
+			if err != nil {
+				errors.SendErrMsg(s, errors.NewError("返信を送信できません", err))
+			}
+			return
+		}
+	}
+
+	// メソッドがDELETEの場合、レコードを削除します
+	if isDelete {
+		err = db.DB.Transaction(func(tx *gorm.DB) error {
+			if err = recordApp.RemoveRecord(tx, m.GuildID, kv["namespace"], kv["key"]); err != nil {
+				return errors.NewError("レコードを削除できません", err)
+			}
+			return nil
+		})
+		if err != nil {
+			_, err = s.ChannelMessageSendReply(m.ChannelID, "ERROR: エラーが発生しました", m.Reference())
+			if err != nil {
+				errors.SendErrMsg(s, errors.NewError("返信を送信できません", err))
+			}
+			errors.SendErrMsg(s, errors.NewError("レコードを削除できません", err))
+			return
+		}
+
+		// リアクションを追加します
+		if err = s.MessageReactionAdd(m.ChannelID, m.ID, "💥"); err != nil {
+			errors.SendErrMsg(s, errors.NewError("リアクションを追加できません", err))
+			return
+		}
+
+		return
 	}
 
 	// valueにはnamespaceとkeyは含めません
@@ -92,31 +134,4 @@ func Store(s *discordgo.Session, m *discordgo.MessageCreate) {
 		errors.SendErrMsg(s, errors.NewError("リアクションを追加できません", err))
 		return
 	}
-}
-
-// チャンネルが指定したDBチャンネルかを判定します
-func IsDBChannel(serverID, channelID string) (bool, error) {
-	var dbChannelID string
-
-	// メモリストアからサーバーの情報を取得します
-	serverStore, ok := bot.ServerMemoryStore.Get(serverID)
-	if ok {
-		dbChannelID = serverStore.DBChannelID
-	} else {
-		// サーバーを取得します
-		server, err := serverApp.GetServer(db.DB, serverID)
-		if err != nil {
-			return false, errors.NewError("サーバーを取得できません", err)
-		}
-
-		// Storeに登録します
-		bot.ServerMemoryStore.Insert(server.ID().String(), bot.ServerData{
-			ServerID:    server.ID().String(),
-			DBChannelID: server.DBChannelID().String(),
-		})
-
-		dbChannelID = server.DBChannelID().String()
-	}
-
-	return dbChannelID == channelID, nil
 }
