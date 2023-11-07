@@ -3,7 +3,6 @@ package bot
 import (
 	serverApp "github.com/totsumaru/dd-bot-be/context/server/app"
 	"github.com/totsumaru/dd-bot-be/internal/db"
-	"github.com/totsumaru/dd-bot-be/internal/errors"
 )
 
 // チャンネルが指定したDBチャンネルかを判定します
@@ -18,7 +17,7 @@ func IsDBChannel(serverID, channelID string) (bool, error) {
 		// サーバーを取得します
 		server, err := serverApp.GetServer(db.DB, serverID)
 		if err != nil {
-			return false, errors.NewError("サーバーを取得できません", err)
+			return false, nil
 		}
 
 		// Storeに登録します

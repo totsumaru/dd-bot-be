@@ -26,6 +26,11 @@ func CreateAdminChannel(s *discordgo.Session, g *discordgo.GuildCreate) {
 				Type:  discordgo.PermissionOverwriteTypeRole,
 				Allow: 0,
 				Deny:  discordgo.PermissionViewChannel, // チャンネルの閲覧をOFFに
+			}, {
+				ID:    s.State.User.ID, // bot自身のユーザーID
+				Type:  discordgo.PermissionOverwriteTypeMember,
+				Allow: discordgo.PermissionViewChannel,
+				Deny:  0,
 			},
 		},
 	})

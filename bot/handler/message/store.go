@@ -105,10 +105,10 @@ func Store(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// valueにはnamespaceとkeyは含めません
+	// valueにはnamespace,key,methodは含めません
 	value := map[string]string{}
 	for k, v := range kv {
-		if k == "namespace" || k == "key" {
+		if k == "namespace" || k == "key" || k == "method" {
 			continue
 		}
 		value[k] = v
