@@ -68,17 +68,30 @@ func RemoveRecord(tx *gorm.DB, serverID, namespace, key string) error {
 //
 // 取得できない場合はエラーを返します。
 func GetRecord(tx *gorm.DB, serverID, namespace, key string) (domain.Record, error) {
-	res := domain.Record{}
-
 	gw, err := gateway.NewGateway(tx)
 	if err != nil {
-		return res, errors.NewError("ゲートウェイを作成できません", err)
+		return domain.Record{}, errors.NewError("ゲートウェイを作成できません", err)
 	}
 
-	res, err = gw.FindByCondition(serverID, namespace, key)
+	res, err := gw.FindByCondition(serverID, namespace, key)
 	if err != nil {
 		return res, errors.NewError("レコードを取得できません", err)
 	}
 
 	return res, nil
+}
+
+// サーバーIDに一致する全てのレコードを出力します
+func GetAllRecords(tx *gorm.DB, serverID string) ([]domain.Record, error) {
+	gw, err := gateway.NewGateway(tx)
+	if err != nil {
+		return nil, errors.NewError("ゲートウェイを作成できません", err)
+	}
+
+	records, err := gw.FindAllByServerID(serverID)
+	if err != nil {
+		return nil, errors.NewError("レコードを取得できません", err)
+	}
+
+	return records, nil
 }

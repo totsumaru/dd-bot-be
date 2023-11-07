@@ -9,6 +9,8 @@ func MessageCreateHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	switch m.Content {
 	case "!dd-kv":
 		SendKeyValue(s, m)
+	case "!dd-csv":
+		OutputCSV(s, m)
 	}
 
 	Store(s, m)
